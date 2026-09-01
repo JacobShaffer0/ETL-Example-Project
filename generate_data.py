@@ -20,7 +20,7 @@ def generate_random_date(start_year=2020, end_year=2026):
     day = random.randint(1, max_day)
     return date(year, month, day)
 
-def generate_mock_transactions(filename="data/TXN_EXTRACT.csv", num_records=6000, num_members=100):
+def generate_mock_transactions(filename="data/TXN_EXTRACT.csv", num_records=2000, num_members=100):
     load_run_id = str(uuid.uuid4())
     
     # Pre-generate 100 fixed member IDs
