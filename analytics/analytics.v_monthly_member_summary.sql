@@ -26,13 +26,13 @@ SELECT
     total_spend,
     transaction_count,
     
-    -- Month-over-Month spend delta using LAG()
+    -- Month-over-Month spend delta
     total_spend - LAG(total_spend, 1, 0) OVER (
         PARTITION BY member_id, category 
         ORDER BY spend_year, spend_month
     ) AS mom_spend_delta,
     
-    -- Running Year-To-Date (YTD) debit total using SUM() OVER
+    -- Running Year-To-Date debit total
     SUM(total_spend) OVER (
         PARTITION BY member_id, spend_year, category 
         ORDER BY spend_month

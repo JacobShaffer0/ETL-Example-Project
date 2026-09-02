@@ -1,4 +1,4 @@
--- Step 1: Ensure target production table exists
+-- Ensure target production table exists
 CREATE TABLE IF NOT EXISTS public.transactions (
     transaction_id VARCHAR(64) PRIMARY KEY,
     member_id VARCHAR(64) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 CREATE INDEX IF NOT EXISTS idx_transactions_member_id ON public.transactions(member_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_posted_date ON public.transactions(posted_date);
 
--- Step 2: Idempotent Upsert from staging into production
+-- Idempotent Upsert from staging into production
 INSERT INTO public.transactions (
     transaction_id,
     member_id,

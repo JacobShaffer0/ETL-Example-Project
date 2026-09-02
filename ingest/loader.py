@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import text
 
 def load_mcc_lookup(engine):
-    """Reads MCC_LOOKUP.csv and performs an idempotent upsert into ref.mcc_categories."""
+    # Reads MCC_LOOKUP.csv and performs an idempotent upsert into ref.mcc_categories
     csv_path = "data/MCC_LOOKUP.csv"
     if not os.path.exists(csv_path):
         print(f"ERROR: File not found at {os.path.abspath(csv_path)}")
@@ -29,7 +29,7 @@ def load_mcc_lookup(engine):
     print("--> Successfully loaded ref.mcc_categories!")
 
 def load_raw_transactions(engine, load_run_id=None):
-    """Reads TXN_EXTRACT.csv and appends raw data into raw.transactions."""
+    #Reads TXN_EXTRACT.csv and appends raw data into raw.transactions.
     csv_path = "data/TXN_EXTRACT.csv"
     if not os.path.exists(csv_path):
         print(f"ERROR: File not found at {os.path.abspath(csv_path)}")

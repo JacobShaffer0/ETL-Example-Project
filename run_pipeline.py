@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from database import get_connection
 
 def execute_sql_file(cur, filepath):
-    """Reads and executes a SQL file using the active cursor."""
+    # Reads and executes a SQL file using the active cursor
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"SQL file not found at {filepath}")
     with open(filepath, "r") as f:
@@ -25,7 +25,7 @@ def run_pipeline():
         conn = get_connection()
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
 
-            #Ingest Raw CSV Data
+            # Ingest Raw CSV Data
             print("1. Running Data Ingestion (Layer 1)...")
             loader_path = os.path.join("ingest", "loader.py")
 
@@ -34,7 +34,7 @@ def run_pipeline():
                 loader_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(loader_module)
 
-                # Pass BOTH engine and load_run_id to loader.py
+                # Pass engine and load_run_id to loader.py
                 if hasattr(loader_module, "run_ingestion"):
                     loader_module.run_ingestion(engine, load_run_id)
                 else:
@@ -44,13 +44,13 @@ def run_pipeline():
 
             print("-> Ingestion completed.\n")
 
-            #Stage and Validate Data
+            # Stage and Validate Data
             print("Staging and Validating Data.")
             stage_script = os.path.join("sql", "stage.sql")
             execute_sql_file(cur, stage_script)
             print("-> Staging completed.\n")
 
-            #Load into Production Tables
+            # Load into Production Tables
             print("Upserting clean records to production")
             load_script = os.path.join("sql", "load.sql")
             execute_sql_file(cur, load_script)

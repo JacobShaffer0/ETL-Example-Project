@@ -1,8 +1,8 @@
--- Step 1: Truncate staging tables so the active load batch stays isolated
+--Truncate staging tables so the active load batch stays isolated
 TRUNCATE TABLE staging.transactions;
 TRUNCATE TABLE staging.rejections;
 
--- Step 2: Route bad/invalid records from raw into staging.rejections
+--Route bad/invalid records from raw into staging.rejections
 INSERT INTO staging.rejections (
     line_number,
     load_run_id,
@@ -28,7 +28,7 @@ WHERE load_run_id = (SELECT load_run_id FROM raw.transactions ORDER BY loaded_at
       OR post_dt IS NULL OR post_dt !~ '^\d{8}$'
   );
 
--- Step 3: Clean, transform, deduplicate, and load valid records into staging.transactions
+--Clean, transform, deduplicate, and load valid records into staging.transactions
 WITH valid_raw AS (
     SELECT 
         r.line_number,

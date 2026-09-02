@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_connection():
-    """Returns a PostgreSQL connection using process environment variables."""
     return psycopg2.connect(
         host=os.environ["DB_HOST"],
         dbname=os.environ["DB_NAME"],
