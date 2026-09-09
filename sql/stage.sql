@@ -1,8 +1,15 @@
---Truncate staging tables so the active load batch stays isolated
+-- Clean up staging tables for current batch execution
 TRUNCATE TABLE staging.transactions;
 TRUNCATE TABLE staging.rejections;
 
---Route bad/invalid records from raw into staging.rejections
+-- Step 1: Route invalid records from raw into staging.rejections
+WITH target_batch AS (
+    SELECT load_run_id 
+    FROM raw.transactions 
+    GROUP BY load_run_id
+    ORDER BY MAX(loaded_at) DESC 
+    LIMIT 1
+)
 INSERT INTO staging.rejections (
     line_number,
     load_run_id,
@@ -11,32 +18,45 @@ INSERT INTO staging.rejections (
     rejected_at
 )
 SELECT 
-    line_number,
-    load_run_id,
-    txn_id,
+    r.line_number,
+    r.load_run_id,
+    r.txn_id,
     CASE 
-        WHEN txn_id IS NULL OR TRIM(txn_id) = '' THEN 'Missing transaction_id'
-        WHEN txn_amt IS NULL OR TRIM(txn_amt) = '' THEN 'Missing transaction amount'
-        WHEN post_dt IS NULL OR post_dt !~ '^\d{8}$' THEN 'Invalid or unparseable post_dt format (expected YYYYMMDD)'
+        WHEN r.txn_id IS NULL OR TRIM(r.txn_id) = '' THEN 'Missing transaction_id'
+        WHEN r.txn_amt IS NULL OR TRIM(r.txn_amt) = '' THEN 'Missing transaction amount'
+        WHEN r.post_dt IS NULL OR TRIM(BOTH E' \r\n\t' FROM r.post_dt::text) = '' THEN 'Date is Null'
         ELSE 'Unknown data quality issue'
     END AS rejection_reason,
     NOW() AS rejected_at
-FROM raw.transactions
-WHERE load_run_id = (SELECT load_run_id FROM raw.transactions ORDER BY loaded_at DESC LIMIT 1)  AND (
-      txn_id IS NULL OR TRIM(txn_id) = ''
-      OR txn_amt IS NULL OR TRIM(txn_amt) = ''
-      OR post_dt IS NULL OR post_dt !~ '^\d{8}$'
-  );
+FROM raw.transactions r
+JOIN target_batch tb ON r.load_run_id = tb.load_run_id
+WHERE (
+    r.txn_id IS NULL OR TRIM(r.txn_id) = ''
+    OR r.txn_amt IS NULL OR TRIM(r.txn_amt) = ''
+    OR r.post_dt IS NULL 
+    OR TRIM(BOTH E' \r\n\t' FROM r.post_dt::text) = ''
+);
 
---Clean, transform, deduplicate, and load valid records into staging.transactions
-WITH valid_raw AS (
+-- Step 2: Clean, transform, deduplicate, and load valid records into staging.transactions
+WITH target_batch AS (
+    SELECT load_run_id 
+    FROM raw.transactions 
+    GROUP BY load_run_id
+    ORDER BY MAX(loaded_at) DESC 
+    LIMIT 1
+),
+valid_raw AS (
     SELECT 
         r.line_number,
         r.load_run_id,
         TRIM(r.txn_id) AS transaction_id,
         TRIM(r.mbr_num) AS member_id,
         TRIM(r.acct_num) AS account_id,
-        TO_DATE(r.post_dt, 'YYYYMMDD') AS posted_date,
+        CASE 
+            WHEN TRIM(BOTH E' \r\n\t' FROM r.post_dt::text) ~ '^\d{8}$' 
+                THEN TO_DATE(TRIM(BOTH E' \r\n\t' FROM r.post_dt::text), 'YYYYMMDD')
+            ELSE TO_DATE(TRIM(BOTH E' \r\n\t' FROM r.post_dt::text), 'YYYY-MM-DD')
+        END AS posted_date,
         CASE 
             WHEN UPPER(TRIM(r.dr_cr_cd)) = 'D' THEN -ABS(r.txn_amt::numeric(12,2))
             ELSE ABS(r.txn_amt::numeric(12,2))
@@ -51,11 +71,13 @@ WITH valid_raw AS (
         TRIM(r.txn_desc) AS description,
         r.loaded_at
     FROM raw.transactions r
+    JOIN target_batch tb ON r.load_run_id = tb.load_run_id
     LEFT JOIN ref.mcc_categories m 
         ON TRIM(r.mcc) = m.mcc
-WHERE r.load_run_id = (SELECT load_run_id FROM raw.transactions ORDER BY loaded_at DESC LIMIT 1)      AND r.txn_id IS NOT NULL AND TRIM(r.txn_id) != ''
+    WHERE r.txn_id IS NOT NULL AND TRIM(r.txn_id) != ''
       AND r.txn_amt IS NOT NULL AND TRIM(r.txn_amt) != ''
-      AND r.post_dt ~ '^\d{8}$'
+      AND r.post_dt IS NOT NULL
+      AND TRIM(BOTH E' \r\n\t' FROM r.post_dt::text) != ''
 ),
 deduplicated AS (
     SELECT 
@@ -91,6 +113,4 @@ SELECT
     load_run_id
 FROM deduplicated
 WHERE row_num = 1;
-
-
 

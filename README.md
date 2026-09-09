@@ -1,22 +1,30 @@
-This program is an end-to-end, PostgreSQL pipeline. This pipeline ingests raw banking transaction data, validates the data and dedeuplicates into a clean staging environment, performs an upsert into production, and computes windowed spending analytics.
-
 Requirements - 
-Python 
-Postgres
+Python: 3.9+
+PostgreSQL: 13+
+Python Libraries: pandas and psycopg2
 
-Run pipeline.py to use the program.
+Generate Mock Data -
 
-1. idempotency ensures that running the same data twice doesn't crash the entire system. Pipelines should not crash from being reran.
+Run generate_data.py to create mock transaction CSV. You can adjust the number of
+transactions and members on line 34.
 
-2. using ROW_NUMBER() assigns a sequence integer to every record per primary key which allows the pipeline to select only where row_num = 1 and discrad identical records.
+Run the Pipeline
 
-3. on conflict does not fail if there is an id is dupicated as insert would. 
+run_pipeline.py Executes the ingestion, staging, production upsert, and metrics generation.
 
-4. created_at records the immutable timestamp when a transaction was first inserted into the database.
+Run genereate_data.py first and then run pipeline.py to use the program. 
 
-updated_at records the timestamp of the most recent modification or backfill.
-Having both provides the abiloty for people to check the data history. 
+1. Ensures that running the pipeline multiple times with the same dataset produces the  same system state without causing duplicate records, errors, or system failure.
 
-5. prevents the ingestion layer from crashing due to malformed dates, unexpected currency symbols, or unexpected string inputs.
+2. Using ROW_NUMBER() assigns a sequence integer to every record per primary key which allows the pipeline to select only where row_num = 1 and discard identical records.
 
-6. using a join allows the mappings to be dynamically updated.
+3. Turns the insertion into an upsert, allowing the query to modify changed attributes instead of throwing a violation.
+
+4. Created_at records the immutable timestamp when a transaction was first inserted into the database.
+
+Updated_at records the timestamp of the most recent modification or backfill.
+Having both provides the ability for people to check the data history. 
+
+5. Prevents the ingestion layer from crashing due to malformed dates, unexpected currency symbols, or unexpected string inputs.
+
+6. Using a join allows the mappings to be dynamically updated.

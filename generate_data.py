@@ -1,7 +1,18 @@
 import csv
 import random
 import uuid
+import pandas as pd 
+import os
 from datetime import datetime, date
+
+
+
+def get_valid_mcc_codes():
+    """Reads valid MCC codes directly from the reference CSV."""
+    mcc_path = "data/MCC_LOOKUP.csv"
+    if os.path.exists(mcc_path):
+        df = pd.read_csv(mcc_path, dtype={"mcc": str})
+        return df["mcc"].tolist()
 
 def generate_random_date(start_year=2020, end_year=2026):
     year = random.randint(start_year, end_year)
@@ -20,13 +31,13 @@ def generate_random_date(start_year=2020, end_year=2026):
     day = random.randint(1, max_day)
     return date(year, month, day)
 
-def generate_mock_transactions(filename="data/TXN_EXTRACT.csv", num_records=11000, num_members=100):
+def generate_mock_transactions(filename="data/TXN_EXTRACT.csv", num_records=1000, num_members=50):
     load_run_id = str(uuid.uuid4())
     
     # Pre-generate fixed member IDs
     member_ids = [f"MBR_{100 + i}" for i in range(num_members)]
     
-    mcc_codes = ["5100", "5200", "5300", "5400", "5812", "5912"]
+    mcc_codes = get_valid_mcc_codes()
     merchants = ["Target", "Walmart", "Starbucks", "Amazon", "Chevron", "Costco"]
     
     with open(filename, mode="w", newline="", encoding="utf-8") as file:
@@ -60,8 +71,7 @@ def generate_mock_transactions(filename="data/TXN_EXTRACT.csv", num_records=1100
                 i, load_run_id, txn_id, mbr_num, acct_num, 
                 post_dt, txn_amt, dr_cr_cd, mcc, merch_nm, txn_desc,
                 txn_seq_num, proc_dt, batch_id
-            ])
-            
+            ])     
     print(f"Successfully generated {num_records} mock records across {num_members} members (2020-2026) in {filename}")
 
 if __name__ == "__main__":

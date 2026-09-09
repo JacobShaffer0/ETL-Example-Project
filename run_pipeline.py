@@ -69,18 +69,28 @@ def run_pipeline():
             #Print Run Summary Metrics
             print("PIPELINE RUN SUMMARY")
 
-            cur.execute(
-                "SELECT COUNT(*) AS cnt FROM raw.transactions WHERE load_run_id = %s;",
-                (load_run_id,)
-            )
-            raw_count = cur.fetchone()["cnt"]
+            # Raw count
+            cur.execute( 
+                "SELECT COUNT(*) AS count FROM raw.transactions WHERE load_run_id = %s;",
+                (load_run_id,))
+            raw_count = cur.fetchone()["count"]
 
             # Staging count
-            cur.execute("SELECT COUNT(*) AS cnt FROM staging.transactions;")
-            stg_count = cur.fetchone()["cnt"]
+            cur.execute("SELECT COUNT(*) AS count FROM staging.transactions;")
+            stage_count = cur.fetchone()["count"]
 
-            print(f"Rows Ingested (Raw)   : {raw_count}")
-            print(f"Rows Staged (Valid)   : {stg_count}")
+            # Rejection count
+            cur.execute("SELECT COUNT(*) AS count FROM staging.rejections;")
+            reject_count = cur.fetchone()["count"]
+
+            #Final count
+            cur.execute("SELECT COUNT(*) as count FROM public.transactions;")
+            public_count = cur.fetchone()["count"]
+
+            print(f"Rows Ingested (Raw): {raw_count}")
+            print(f"Rows Staged (Valid): {stage_count}")
+            print(f"Rows Rejected: {reject_count}")
+            print(f"Rows in Public: {public_count}")
 
     except Exception as e:
         if 'conn' in locals() and conn:

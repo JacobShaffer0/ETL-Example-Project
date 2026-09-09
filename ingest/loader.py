@@ -35,7 +35,7 @@ def load_raw_transactions(engine, load_run_id=None):
         print(f"ERROR: File not found at {os.path.abspath(csv_path)}")
         return
 
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, dtype=str)
     print(f"Reading {csv_path}: Found {len(df)} rows.")
 
     # Use active run ID from pipeline, or fallback if run standalone
@@ -57,6 +57,5 @@ def load_raw_transactions(engine, load_run_id=None):
     print(f"--> Successfully loaded {len(df)} rows into raw.transactions!")
 
 def run_ingestion(engine, load_run_id=None):
-    """Entry point called by run_pipeline.py, receiving the shared engine."""
     load_mcc_lookup(engine)
     load_raw_transactions(engine, load_run_id)
