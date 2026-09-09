@@ -1,6 +1,7 @@
 Requirements - 
 Python: 3.9+
 PostgreSQL: 13+
+
 Python Libraries: pandas and psycopg2
 
 Generate Mock Data -
