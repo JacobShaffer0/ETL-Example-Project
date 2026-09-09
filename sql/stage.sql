@@ -1,8 +1,8 @@
--- Clean up staging tables for current batch execution
+-- Clean staging tables 
 TRUNCATE TABLE staging.transactions;
 TRUNCATE TABLE staging.rejections;
 
--- Step 1: Route invalid records from raw into staging.rejections
+-- Put invalid records from raw into staging.rejections
 WITH target_batch AS (
     SELECT load_run_id 
     FROM raw.transactions 
@@ -37,7 +37,7 @@ WHERE (
     OR TRIM(BOTH E' \r\n\t' FROM r.post_dt::text) = ''
 );
 
--- Step 2: Clean, transform, deduplicate, and load valid records into staging.transactions
+-- Clean, transform, deduplicate, and load valid records into staging.transactions
 WITH target_batch AS (
     SELECT load_run_id 
     FROM raw.transactions 
